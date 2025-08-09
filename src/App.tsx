@@ -137,7 +137,7 @@ function App() {
                 <p className="text-gray-600">Try adjusting your filters to see more results.</p>
               </div>
             )}
-          
+          </>
         ) : (
           <div className="space-y-8">
             <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm border">
