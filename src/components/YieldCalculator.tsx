@@ -70,7 +70,8 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-4 border">
+        <>
+          <div className="bg-white rounded-lg p-4 border">
           <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
             <TrendingUp className="w-4 h-4 mr-2 text-green-600" />
             Projected Returns
@@ -128,16 +129,16 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
               </div>
             )}
           </div>
-        </div>
 
-        <div className="flex justify-end">
-          <button
-            onClick={handleExpressInterest}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            Express Interest for This Calculation
-          </button>
-        </div>
+          <div className="flex justify-end">
+            <button
+              onClick={handleExpressInterest}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Express Interest for This Calculation
+            </button>
+          </div>
+        </>
       </div>
     </div>
   );
