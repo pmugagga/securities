@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Header } from './components/Header';
+import { LoginModal } from './components/LoginModal';
 import { FilterBar } from './components/FilterBar';
 import { SecurityCard } from './components/SecurityCard';
 import { AdminPanel } from './components/AdminPanel';
@@ -10,7 +11,8 @@ import { Security, InvestorLead, FilterOptions, SortOption } from './types';
 function App() {
   const [securities, setSecurities] = useState<Security[]>(mockSecurities);
   const [leads, setLeads] = useState<InvestorLead[]>([]);
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'leads'>('dashboard');
   
   const [filters, setFilters] = useState<FilterOptions>({
@@ -94,12 +96,37 @@ function App() {
     return () => window.removeEventListener('interestSubmit', handleInterestSubmit as EventListener);
   }, []);
 
+  const handleLogin = (username: string, password: string): boolean => {
+    // Simple demo authentication - in production, this would be a secure API call
+    if (username === 'admin' && password === 'admin123') {
+      setIsLoggedIn(true);
+      return true;
+    }
+    return false;
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setActiveTab('dashboard');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header onToggleAdmin={() => setIsAdminMode(!isAdminMode)} isAdminMode={isAdminMode} />
+      <Header 
+        onShowLogin={() => setShowLoginModal(true)}
+        onLogout={handleLogout}
+        isAdminMode={isLoggedIn}
+        isLoggedIn={isLoggedIn}
+      />
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={handleLogin}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!isAdminMode ? (
+        {!isLoggedIn ? (
           <>
             {/* Hero Section */}
             <div className="text-center mb-12">
@@ -138,7 +165,7 @@ function App() {
               </div>
             )}
           </>
-        ) : (
+        ) : isLoggedIn && (
           <div className="space-y-8">
             <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm border">
               <button

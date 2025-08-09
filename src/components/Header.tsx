@@ -1,12 +1,14 @@
 import React from 'react';
-import { TrendingUp, Shield, Users } from 'lucide-react';
+import { TrendingUp, Shield, Users, LogOut } from 'lucide-react';
 
 interface HeaderProps {
-  onToggleAdmin: () => void;
+  onShowLogin: () => void;
+  onLogout: () => void;
   isAdminMode: boolean;
+  isLoggedIn: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onToggleAdmin, isAdminMode }) => {
+export const Header: React.FC<HeaderProps> = ({ onShowLogin, onLogout, isAdminMode, isLoggedIn }) => {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,16 +31,27 @@ export const Header: React.FC<HeaderProps> = ({ onToggleAdmin, isAdminMode }) =>
             </div>
           </nav>
 
-          <button
-            onClick={onToggleAdmin}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              isAdminMode
-                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {isAdminMode ? 'Exit Admin' : 'Admin Panel'}
-          </button>
+          <div className="flex items-center space-x-2">
+            {isLoggedIn && isAdminMode && (
+              <span className="text-sm text-green-600 font-medium">Admin Mode</span>
+            )}
+            {isLoggedIn ? (
+              <button
+                onClick={onLogout}
+                className="flex items-center px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-medium transition-colors"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </button>
+            ) : (
+              <button
+                onClick={onShowLogin}
+                className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+              >
+                Admin Login
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </header>
