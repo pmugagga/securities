@@ -77,30 +77,30 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
             Projected Returns
           </h5>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div className="text-center">
                 <div className="text-sm text-gray-500 mb-1">Principal Amount</div>
                 <div className="font-bold text-lg text-gray-900 break-words">
                   {formatCurrency(calculation.principal)}
                 </div>
-              <div className="font-semibold text-gray-900">{formatCurrency(calculation.principal)}</div>
-            </div>
+              </div>
+              <div className="text-center">
                 <div className="text-sm text-gray-500 mb-1">Total at Maturity</div>
                 <div className="font-bold text-lg text-green-600 break-words">
                   {formatCurrency(calculation.totalReturns)}
                 </div>
-              <div className="font-semibold text-green-600">{formatCurrency(calculation.totalReturns)}</div>
-            </div>
+              </div>
+              <div className="text-center">
                 <div className="text-sm text-gray-500 mb-1">Net Profit</div>
                 <div className="font-bold text-lg text-green-600 break-words">
                   {formatCurrency(calculation.netReturns)}
                 </div>
-              <div className="font-semibold text-green-600">{formatCurrency(calculation.netReturns)}</div>
-            </div>
+              </div>
+              <div className="text-center">
                 <div className="text-sm text-gray-500 mb-1">Effective Yield (p.a.)</div>
                 <div className="font-bold text-lg text-blue-600">
                   {formatPercentage(calculation.effectiveYield)}
                 </div>
-              <div className="font-semibold text-blue-600">{formatPercentage(calculation.effectiveYield)}</div>
+              </div>
             </div>
             
             {/* Additional breakdown for large amounts */}
