@@ -128,7 +128,7 @@ function App() {
                   onExpressInterest={handleExpressInterest}
                 />
               ))}
-            </><></div>
+            </div>
 
             {filteredAndSortedSecurities.length === 0 && (
               <div className="text-center py-12">
