@@ -49,13 +49,12 @@ export const calculateYield = (
 
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-UG', {
-    style: 'currency',
-    currency: 'UGX',
+    style: 'decimal',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
     notation: amount >= 1000000 ? 'compact' : 'standard',
     compactDisplay: 'short'
-  }).format(amount);
+  }).format(amount) + ' UGX';
 };
 
 export const formatPercentage = (rate: number): string => {
