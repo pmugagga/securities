@@ -7,9 +7,10 @@ interface LeadsPanelProps {
   leads: InvestorLead[];
   securities: Security[];
   onUpdateLeadStatus: (leadId: string, status: 'pending' | 'contacted' | 'converted') => void;
+  loading: boolean;
 }
 
-export const LeadsPanel: React.FC<LeadsPanelProps> = ({ leads, securities, onUpdateLeadStatus }) => {
+export const LeadsPanel: React.FC<LeadsPanelProps> = ({ leads, securities, onUpdateLeadStatus, loading }) => {
   const getSecurityName = (securityId: string) => {
     const security = securities.find(s => s.id === securityId);
     return security?.name || 'Unknown Security';
@@ -38,6 +39,13 @@ export const LeadsPanel: React.FC<LeadsPanelProps> = ({ leads, securities, onUpd
       </div>
 
       <div className="space-y-4">
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading leads...</p>
+          </div>
+        ) : (
+          <>
         {leads.length === 0 ? (
           <div className="text-center py-8">
             <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -101,6 +109,8 @@ export const LeadsPanel: React.FC<LeadsPanelProps> = ({ leads, securities, onUpd
               </div>
             </div>
           ))
+        )}
+          </>
         )}
       </div>
     </div>

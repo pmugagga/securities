@@ -5,28 +5,36 @@ import { formatCurrency, formatPercentage, formatDate } from '../utils/calculati
 
 interface AdminPanelProps {
   securities: Security[];
-  onUpdateSecurities: (securities: Security[]) => void;
+  onAddSecurity: (security: Omit<Security, 'id'>) => Promise<Security>;
+  onUpdateSecurity: (id: string, updates: Partial<Security>) => Promise<Security>;
+  onDeleteSecurity: (id: string) => Promise<void>;
+  loading: boolean;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ securities, onUpdateSecurities }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ 
+  securities, 
+  onAddSecurity, 
+  onUpdateSecurity, 
+  onDeleteSecurity,
+  loading 
+}) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState<Partial<Security>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleEdit = (security: Security) => {
     setEditingId(security.id);
     setFormData(security);
   };
 
-  const handleSave = () => {
-    if (editingId) {
-      const updatedSecurities = securities.map(s => 
-        s.id === editingId ? { ...s, ...formData } : s
-      );
-      onUpdateSecurities(updatedSecurities);
-    } else {
-      const newSecurity: Security = {
-        id: Date.now().toString(),
+  const handleSave = async () => {
+    setIsSubmitting(true);
+    try {
+      if (editingId) {
+        await onUpdateSecurity(editingId, formData);
+      } else {
+        const newSecurityData = {
         type: formData.type as 'government_bond' | 'treasury_bill',
         name: formData.name || '',
         issuer: formData.issuer || '',
@@ -39,17 +47,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ securities, onUpdateSecu
         status: formData.status as 'active' | 'closed' | 'upcoming' || 'active',
         description: formData.description || '',
         riskRating: formData.riskRating as 'low' | 'medium' | 'high' || 'low'
-      };
-      onUpdateSecurities([...securities, newSecurity]);
+        };
+        await onAddSecurity(newSecurityData);
+      }
+    } catch (error) {
+      alert('Error saving security: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
     setEditingId(null);
     setShowAddForm(false);
     setFormData({});
+    setIsSubmitting(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this security?')) {
-      onUpdateSecurities(securities.filter(s => s.id !== id));
+      try {
+        await onDeleteSecurity(id);
+      } catch (error) {
+        alert('Error deleting security: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
     }
   };
 
@@ -193,13 +209,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ securities, onUpdateSecu
           <div className="flex space-x-2 mt-4">
             <button
               onClick={handleSave}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              disabled={isSubmitting}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4 mr-2" />
-              Save
+              {isSubmitting ? 'Saving...' : 'Save'}
             </button>
             <button
               onClick={handleCancel}
+              disabled={isSubmitting}
               className="flex items-center px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
             >
               <X className="w-4 h-4 mr-2" />
@@ -209,6 +227,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ securities, onUpdateSecu
         </div>
       )}
 
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading securities...</p>
+        </div>
+      ) : (
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -266,6 +290,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ securities, onUpdateSecu
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 };

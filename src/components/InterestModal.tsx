@@ -32,8 +32,21 @@ export const InterestModal: React.FC<InterestModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData.investmentAmount, formData.selectedTenor, projectedReturns);
-    onClose();
+    
+    // Dispatch custom event for global handling
+    const event = new CustomEvent('interestSubmit', {
+      detail: {
+        securityId: security.id,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        investmentAmount: formData.investmentAmount,
+        selectedTenor: formData.selectedTenor,
+        projectedReturns
+      }
+    });
+    window.dispatchEvent(event);
+    
     setFormData({
       fullName: '',
       email: '',
@@ -41,6 +54,7 @@ export const InterestModal: React.FC<InterestModalProps> = ({
       investmentAmount: security.minimumInvestment,
       selectedTenor: security.duration
     });
+    onClose();
   };
 
   if (!isOpen) return null;

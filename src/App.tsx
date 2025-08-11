@@ -5,12 +5,13 @@ import { FilterBar } from './components/FilterBar';
 import { SecurityCard } from './components/SecurityCard';
 import { AdminPanel } from './components/AdminPanel';
 import { LeadsPanel } from './components/LeadsPanel';
-import { mockSecurities } from './data/mockSecurities';
-import { Security, InvestorLead, FilterOptions, SortOption } from './types';
+import { useSecurities } from './hooks/useSecurities';
+import { useInvestorLeads } from './hooks/useInvestorLeads';
+import { FilterOptions, SortOption } from './types';
 
 function App() {
-  const [securities, setSecurities] = useState<Security[]>(mockSecurities);
-  const [leads, setLeads] = useState<InvestorLead[]>([]);
+  const { securities, loading: securitiesLoading, addSecurity, updateSecurity, deleteSecurity } = useSecurities();
+  const { leads, loading: leadsLoading, addLead, updateLeadStatus } = useInvestorLeads();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'leads'>('dashboard');
@@ -61,27 +62,11 @@ function App() {
     console.log('Interest expressed:', { securityId, amount, tenor, projectedReturns });
   };
 
-  const handleAddLead = (lead: Omit<InvestorLead, 'id' | 'createdAt' | 'status'>) => {
-    const newLead: InvestorLead = {
-      ...lead,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      status: 'pending'
-    };
-    setLeads(prev => [newLead, ...prev]);
-  };
-
-  const handleUpdateLeadStatus = (leadId: string, status: 'pending' | 'contacted' | 'converted') => {
-    setLeads(prev => prev.map(lead => 
-      lead.id === leadId ? { ...lead, status } : lead
-    ));
-  };
-
   // Add a global event listener for form submissions from InterestModal
   React.useEffect(() => {
     const handleInterestSubmit = (event: CustomEvent) => {
       const { securityId, fullName, email, phone, investmentAmount, selectedTenor, projectedReturns } = event.detail;
-      handleAddLead({
+      addLead({
         securityId,
         fullName,
         email,
@@ -94,7 +79,7 @@ function App() {
 
     window.addEventListener('interestSubmit', handleInterestSubmit as EventListener);
     return () => window.removeEventListener('interestSubmit', handleInterestSubmit as EventListener);
-  }, []);
+  }, [addLead]);
 
   const handleLogin = (username: string, password: string): boolean => {
     // Simple demo authentication - in production, this would be a secure API call
@@ -128,6 +113,13 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {!isLoggedIn ? (
           <>
+            {securitiesLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading securities...</p>
+              </div>
+            ) : (
+              <>
             {/* Hero Section */}
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -164,6 +156,8 @@ function App() {
                 <p className="text-gray-600">Try adjusting your filters to see more results.</p>
               </div>
             )}
+              </>
+            )}
           </>
         ) : isLoggedIn && (
           <div className="space-y-8">
@@ -191,12 +185,19 @@ function App() {
             </div>
 
             {activeTab === 'dashboard' ? (
-              <AdminPanel securities={securities} onUpdateSecurities={setSecurities} />
+              <AdminPanel 
+                securities={securities} 
+                onAddSecurity={addSecurity}
+                onUpdateSecurity={updateSecurity}
+                onDeleteSecurity={deleteSecurity}
+                loading={securitiesLoading}
+              />
             ) : (
               <LeadsPanel 
                 leads={leads} 
                 securities={securities} 
-                onUpdateLeadStatus={handleUpdateLeadStatus} 
+                onUpdateLeadStatus={updateLeadStatus}
+                loading={leadsLoading}
               />
             )}
           </div>
