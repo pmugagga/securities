@@ -6,21 +6,16 @@ export const calculateYield = (
   tenor: number,
   securityType: 'government_bond' | 'treasury_bill'
 ): YieldCalculation => {
-  const rate = interestRate / 100;
+  // For government bonds, we need to distinguish between coupon rate and YTM
+  // interestRate represents the coupon rate, but we'll use a market-based YTM
+  const couponRate = interestRate / 100;
   
   if (securityType === 'treasury_bill') {
-    // Treasury bills are discount instruments - you buy at discount and receive face value at maturity
-    // Face value is what you want to receive, purchase price is discounted
+    // Treasury bills: discount instruments
     const faceValue = principal;
-    const discountRate = rate * (tenor / 12); // Annualized rate adjusted for tenor
+    const discountRate = couponRate * (tenor / 12);
     const purchasePrice = faceValue / (1 + discountRate);
     const totalReturns = faceValue;
-    const netReturns = totalReturns - purchasePrice;
-    
-    // Effective yield calculation for discount instruments
-    const effectiveYield = ((faceValue - purchasePrice) / purchasePrice) * (365 / (tenor * 30.44)) * 100;
-    
-    return {
       principal: purchasePrice,
       tenor,
       interestRate,
@@ -55,19 +50,20 @@ export const calculateYield = (
     // More accurate YTM approximation considering time value
     const yearsToMaturity = tenor / 12;
     const effectiveYield = ((totalReturns / principal) ** (1 / yearsToMaturity) - 1) * 100;
+    // Total at maturity = Current market value compounded at YTM
     
     return {
-      principal,
+    // Annual coupon payments (face value assumed equal to principal for simplicity)
       tenor,
-      interestRate,
+    const annualCouponPayment = faceValue * couponRate;
       totalReturns,
       netReturns,
-      effectiveYield
-    };
-  }
-};
-
-export const formatCurrency = (amount: number): string => {
+    // For bonds, total returns should include both coupon payments and final principal
+    // But since we're calculating based on YTM, the totalReturns already incorporates expected returns
+    const netReturns = totalReturns - principal;
+    // Government bonds: Use market-based YTM for accurate calculations
+    // The effective yield is the YTM we used
+    const effectiveYield = marketYTM * 100;
   return new Intl.NumberFormat('en-UG', {
     style: 'decimal',
     minimumFractionDigits: 0,

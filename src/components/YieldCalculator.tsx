@@ -79,7 +79,7 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <div className="text-sm text-blue-700 font-medium mb-1">
-                  {security.type === 'treasury_bill' ? 'Purchase Price' : 'Principal Amount'}
+                  {security.type === 'treasury_bill' ? 'Purchase Price' : 'Current Market Value'}
                 </div>
                 <div className="font-bold text-lg text-gray-900 break-words">
                   {formatCurrency(calculation.principal)}
@@ -91,14 +91,16 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
                 )}
               </div>
               <div className="text-center p-3 bg-green-50 rounded-lg">
-                <div className="text-sm text-green-700 font-medium mb-1">Total at Maturity</div>
+                <div className="text-sm text-green-700 font-medium mb-1">
+                  {security.type === 'treasury_bill' ? 'Total at Maturity' : 'Total Value at Maturity (YTM-based)'}
+                </div>
                 <div className="font-bold text-lg text-green-600 break-words">
                   {formatCurrency(calculation.totalReturns)}
                 </div>
               </div>
               <div className="text-center p-3 bg-emerald-50 rounded-lg">
                 <div className="text-sm text-emerald-700 font-medium mb-1">
-                  {security.type === 'treasury_bill' ? 'Discount Earned' : 'Interest Earned'}
+                  {security.type === 'treasury_bill' ? 'Discount Earned' : 'Total Gain (YTM-based)'}
                 </div>
                 <div className="font-bold text-lg text-green-600 break-words">
                   {formatCurrency(calculation.netReturns)}
@@ -106,7 +108,7 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
               </div>
               <div className="text-center p-3 bg-purple-50 rounded-lg">
                 <div className="text-sm text-purple-700 font-medium mb-1">
-                  {security.type === 'treasury_bill' ? 'Annualized Yield' : 'Effective Yield (p.a.)'}
+                  {security.type === 'treasury_bill' ? 'Annualized Yield' : 'Yield to Maturity (YTM)'}
                 </div>
                 <div className="font-bold text-lg text-blue-600">
                   {formatPercentage(calculation.effectiveYield)}
@@ -114,27 +116,36 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
               </div>
             </div>
             
-            {/* Payment schedule for bonds */}
+            {/* Market information for bonds */}
             {security.type === 'government_bond' && (
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <h6 className="font-semibold text-gray-900 mb-3">Payment Schedule</h6>
+                <h6 className="font-semibold text-gray-900 mb-3">Bond Details</h6>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="text-blue-700 font-medium mb-1">Coupon Frequency</div>
-                    <div className="text-blue-900 font-semibold">Semi-annual (every 6 months)</div>
+                    <div className="text-blue-700 font-medium mb-1">Coupon Rate (Annual)</div>
+                    <div className="text-blue-900 font-semibold">{formatPercentage(security.interestRate)}</div>
                   </div>
                   <div className="bg-green-50 p-3 rounded-lg">
-                    <div className="text-green-700 font-medium mb-1">Coupon Payment</div>
+                    <div className="text-green-700 font-medium mb-1">Annual Coupon Payment</div>
                     <div className="text-green-900 font-semibold">
-                      {formatCurrency((amount * security.interestRate / 100) / 2)} per payment
+                      {formatCurrency(amount * security.interestRate / 100)}
                     </div>
                   </div>
                   <div className="bg-purple-50 p-3 rounded-lg">
-                    <div className="text-purple-700 font-medium mb-1">Total Payments</div>
+                    <div className="text-purple-700 font-medium mb-1">Years to Maturity</div>
                     <div className="text-purple-900 font-semibold">
-                      {Math.floor((tenor / 12) * 2)} coupon payments
+                      {Math.round((tenor / 12) * 10) / 10} years
                     </div>
                   </div>
+                </div>
+                
+                <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <h6 className="font-semibold text-indigo-800 mb-2">YTM Calculation Method</h6>
+                  <p className="text-sm text-indigo-700">
+                    The total at maturity is calculated by compounding your current investment at the Yield to Maturity (YTM) rate. 
+                    This reflects the actual market return you can expect if you hold the bond until maturity, 
+                    considering both coupon payments and any capital gains/losses.
+                  </p>
                 </div>
               </div>
             )}
@@ -172,8 +183,8 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
                   <ul className="text-sm text-yellow-700 space-y-1">
                     <li>• Returns are subject to withholding tax as per Uganda tax regulations</li>
                     <li>• Government securities are backed by the Republic of Uganda</li>
-                    <li>• {security.type === 'treasury_bill' ? 'Treasury bills are short-term discount instruments' : 'Government bonds pay regular coupon payments'}</li>
-                    <li>• Calculations assume holding to maturity</li>
+                    <li>• {security.type === 'treasury_bill' ? 'Treasury bills are short-term discount instruments' : 'Bond calculations use market-based Yield to Maturity (YTM)'}</li>
+                    <li>• {security.type === 'government_bond' ? 'YTM reflects current market conditions and may differ from coupon rate' : 'Calculations assume holding to maturity'}</li>
                   </ul>
                 </div>
               </div>
