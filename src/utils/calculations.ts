@@ -50,72 +50,40 @@ export interface YieldCalculation {
 export function calculateYield(
   principal: number,
   interestRate: number,
-  maturityDate: string,
-  securityType: string,
+  tenor: number,
+  securityType: 'government_bond' | 'treasury_bill',
   yieldToMaturity?: number
-): YieldCalculation {
-  const yearsToMaturity = calculateYearsToMaturity(maturityDate);
+) {
+  const yearsToMaturity = tenor / 12;
   
   if (securityType === 'treasury_bill') {
     // Treasury bills are discount instruments
     const discountRate = interestRate / 100;
-    const discountAmount = principal * discountRate * (yearsToMaturity);
+    const discountAmount = principal * discountRate * yearsToMaturity;
     const purchasePrice = principal - discountAmount;
-    const totalReturns = discountAmount;
-    const effectiveYield = (discountAmount / purchasePrice) * (365 / calculateDaysToMaturity(maturityDate)) * 100;
+    const netReturns = discountAmount;
+    const effectiveYield = (discountAmount / purchasePrice) * (12 / tenor) * 100;
     
     return {
-      totalAtMaturity: principal, // Face value received at maturity
-      totalReturns,
+      principal: purchasePrice,
+      totalReturns: principal, // Face value received at maturity
+      netReturns,
       effectiveYield,
-      purchasePrice,
     };
   } else {
     // Government bonds - use YTM if provided, otherwise estimate
-    const ytm = yieldToMaturity || Math.max(interestRate * 2.5, 17); // Minimum 17% or 2.5x coupon rate
-    const couponRate = interestRate / 100;
+    const ytm = yieldToMaturity || Math.max(interestRate * 1.5, 17); // Minimum 17% or 1.5x coupon rate
     const ytmDecimal = ytm / 100;
     
     // Calculate total at maturity using YTM compounding
     const totalAtMaturity = principal * Math.pow(1 + ytmDecimal, yearsToMaturity);
-    const totalReturns = totalAtMaturity - principal;
-    
-    // Calculate coupon payments (semi-annual)
-    const faceValue = principal; // Assuming investment amount equals face value for simplicity
-    const semiAnnualCoupon = (faceValue * couponRate) / 2;
-    const totalCouponPayments = Math.floor(yearsToMaturity * 2);
-    const totalCoupons = semiAnnualCoupon * totalCouponPayments;
+    const netReturns = totalAtMaturity - principal;
     
     return {
-      totalAtMaturity,
-      totalReturns,
+      principal,
+      totalReturns: totalAtMaturity,
+      netReturns,
       effectiveYield: ytm,
-      couponPayments: totalCoupons,
-      capitalGain: totalAtMaturity - principal - totalCoupons,
-      paymentSchedule: {
-        frequency: 'Semi-annual',
-        paymentAmount: semiAnnualCoupon,
-        totalPayments: totalCouponPayments,
-      },
     };
   }
-}
-
-export function calculateProjectedReturns(
-  investmentAmount: number,
-  selectedTenor: number,
-  interestRate: number,
-  securityType: string,
-  maturityDate: string,
-  yieldToMaturity?: number
-): number {
-  const calculation = calculateYield(
-    investmentAmount,
-    interestRate,
-    maturityDate,
-    securityType,
-    yieldToMaturity
-  );
-  
-  return calculation.totalReturns;
 }
