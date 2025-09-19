@@ -123,6 +123,7 @@ export function calculateYield(
     // Government bonds - use YTM if provided, otherwise estimate
     const ytm = yieldToMaturity || Math.max(interestRate * 1.5, 17); // Minimum 17% or 1.5x coupon rate
     const ytmDecimal = ytm / 100;
+    const couponRate = interestRate / 100;
     
     // Calculate face value from market price
     const faceValue = calculateFaceValue(principal, couponRate, ytm, yearsToMaturity);
