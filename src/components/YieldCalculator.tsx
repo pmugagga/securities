@@ -127,7 +127,7 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
               <div className="text-center p-3 bg-purple-50 rounded-lg">
                 <div className="text-sm text-purple-700 font-medium mb-1">
                 Annualized Return
-                Investment Amount
+                </div>
                 <div className="font-bold text-lg text-blue-600">
                   {formatPercentage(calculation.effectiveYield)}
                 </div>
