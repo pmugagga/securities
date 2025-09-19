@@ -97,10 +97,124 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
           <div className="bg-white rounded-lg p-4 border">
           <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
             <TrendingUp className="w-4 h-4 mr-2 text-green-600" />
-            {security.type === 'government_bond' ? 'Projected Returns (2-Year Hold)' : 'Projected Returns'}
+            {security.type === 'government_bond' ? `Projected Returns (${Math.round(tenor/12*10)/10}-Year Hold)` : 'Projected Returns'}
           </h5>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="text-sm text-blue-700 font-medium mb-1">
+                Initial Price (P₀)
+              </div>
+              <div className="font-bold text-lg text-gray-900 break-words">
+                {formatCurrency(calculation.principal)}
+              </div>
+            </div>
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <div className="text-sm text-purple-700 font-medium mb-1">
+                Exit Price (Pₜ)
+              </div>
+              <div className="font-bold text-lg text-purple-600 break-words">
+                {formatCurrency(calculation.exitPrice || 0)}
+              </div>
+            </div>
+            <div className="text-center p-3 bg-yellow-50 rounded-lg">
+              <div className="text-sm text-yellow-700 font-medium mb-1">
+                Total Coupon Income
+              </div>
+              <div className="font-bold text-lg text-yellow-600 break-words">
+                {formatCurrency(calculation.totalCouponIncome || 0)}
+              </div>
+              <div className="text-xs text-yellow-600 mt-1">
+                (After 10% tax)
+              </div>
+            </div>
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="text-sm text-green-700 font-medium mb-1">
+                Exit Value
+              </div>
+              <div className="font-bold text-lg text-green-600 break-words">
+                {formatCurrency(calculation.totalReturns)}
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-3 bg-emerald-50 rounded-lg">
+              <div className="text-sm text-emerald-700 font-medium mb-1">
+                Total Gain
+              </div>
+              <div className="font-bold text-lg text-green-600 break-words">
+                {formatCurrency(calculation.netReturns)}
+              </div>
+            </div>
+            <div className="text-center p-3 bg-indigo-50 rounded-lg">
+              <div className="text-sm text-indigo-700 font-medium mb-1">
+                Projected Return
+              </div>
+              <div className="font-bold text-lg text-indigo-600">
+                {formatPercentage(calculation.bondDetails?.projectedReturn || calculation.effectiveYield)}
+              </div>
+            </div>
+            <div className="text-center p-3 bg-cyan-50 rounded-lg">
+              <div className="text-sm text-cyan-700 font-medium mb-1">
+                Annualized Return
+              </div>
+              <div className="font-bold text-lg text-cyan-600">
+                {formatPercentage(calculation.effectiveYield)}
+              </div>
+            </div>
+          </div>
+
+          {security.type === 'government_bond' && calculation.bondDetails && (
+            <div className="mt-4 pt-4 border-t">
+              <h6 className="font-medium text-gray-800 mb-3">Bond Analysis Details</h6>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="bg-gray-50 p-3 rounded">
+                  <div className="text-gray-700 font-medium">Face Value</div>
+                  <div className="text-lg font-bold text-gray-800">
+                    {formatCurrency(calculation.faceValue || 0)}
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded">
+                  <div className="text-gray-700 font-medium">Annual Coupon (Gross)</div>
+                  <div className="text-lg font-bold text-gray-800">
+                    {formatCurrency(calculation.annualCoupon || 0)}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {formatPercentage(security.interestRate)} of face value
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded">
+                  <div className="text-gray-700 font-medium">Annual Coupon (Net)</div>
+                  <div className="text-lg font-bold text-gray-800">
+                    {formatCurrency(calculation.netAnnualCoupon || 0)}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    After 10% withholding tax
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded">
+                  <div className="text-gray-700 font-medium">Yield to Maturity</div>
+                  <div className="text-lg font-bold text-gray-800">
+                    {formatPercentage(security.yield || 17.2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={handleExpressInterest}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Express Interest for This Calculation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
                 <div className="text-sm text-blue-700 font-medium mb-1">
                   Current Market Value
                 </div>

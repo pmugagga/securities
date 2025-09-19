@@ -86,88 +86,123 @@ export interface YieldCalculation {
     annualizedReturn: number;
   };
   purchasePrice?: number;
-  couponPayments?: number;
-  capitalGain?: number;
-  paymentSchedule?: {
-    frequency: string;
-    paymentAmount: number;
-    totalPayments: number;
-  };
+    // Government bonds - use the specified formula
+    return calculateBondReturns(principal, interestRate, tenor, yieldToMaturity);
+  }
 }
 
-export function calculateYield(
-  principal: number,
-  interestRate: number,
-  tenor: number,
-  securityType: 'government_bond' | 'treasury_bill',
-  yieldToMaturity?: number,
-  maturityDate?: string
+function calculateBondReturns(
+  investmentAmount: number,
+  couponRate: number,
+  tenorMonths: number,
+  yieldToMaturity: number = 17.2
 ) {
-  const yearsToMaturity = tenor / 12;
+  // Inputs
+  const P = investmentAmount; // Investment Amount
+  const C = couponRate; // Coupon Rate in %
+  const YTM = yieldToMaturity; // Yield to Maturity in %
+  const M = tenorMonths; // Investment Period in months
+  const Y = 20; // Bond Maturity in years (assumed for government bonds)
+  const withholdingTax = 0.10; // 10% withholding tax
   
-  if (securityType === 'treasury_bill') {
-    // Treasury bills are discount instruments
-    const discountRate = interestRate / 100;
-    const discountAmount = principal * discountRate * yearsToMaturity;
-    const purchasePrice = principal - discountAmount;
-    const netReturns = discountAmount;
-    const effectiveYield = (discountAmount / purchasePrice) * (12 / tenor) * 100;
+  // Step 1: Calculate Face Value from Investment Amount
+  // We need to solve for FV where P = bond price at YTM
+  // Using iterative method to find face value
+  let FV = P * 1.3; // Initial guess (bonds typically trade at discount)
+  const tolerance = 1;
+  let iterations = 0;
+  const maxIterations = 100;
+  
+  while (iterations < maxIterations) {
+    // Calculate theoretical bond price with current FV guess
+    const couponPayment = (FV * C) / 100;
+    const ytmDecimal = YTM / 100;
     
-    return {
-      principal: purchasePrice,
-      totalReturns: principal, // Face value received at maturity
-      netReturns,
-      effectiveYield,
-    };
-  } else {
-    // Government bonds - use YTM if provided, otherwise estimate
-    const ytm = yieldToMaturity || Math.max(interestRate * 1.5, 17); // Minimum 17% or 1.5x coupon rate
-    const ytmDecimal = ytm / 100;
-    const couponRate = interestRate / 100;
-    
-    // Calculate face value from market price
-    const faceValue = calculateFaceValue(principal, couponRate, ytm, yearsToMaturity);
-    const annualCoupon = faceValue * couponRate;
-    
-    // For holding period calculation (assume 2-year holding period for demonstration)
-    const holdingPeriod = Math.min(2, yearsToMaturity);
-    const remainingYears = yearsToMaturity - holdingPeriod;
-    
-    // Calculate total coupon payments during holding period
-    const totalCouponPayments = annualCoupon * holdingPeriod;
-    
-    // Calculate bond price at end of holding period (if not held to maturity)
-    let futurePrice = faceValue; // If held to maturity
-    if (remainingYears > 0) {
-      futurePrice = calculateBondPrice(faceValue, couponRate, ytm, remainingYears);
+    // Present value of coupon payments
+    let couponPV = 0;
+    for (let i = 1; i <= Y; i++) {
+      couponPV += couponPayment / Math.pow(1 + ytmDecimal, i);
     }
     
-    // Total proceeds from investment
-    const totalProceeds = totalCouponPayments + futurePrice;
-    const capitalGain = futurePrice - principal;
-    const netReturns = totalProceeds - principal;
+    // Present value of principal repayment
+    const principalPV = FV / Math.pow(1 + ytmDecimal, Y);
     
-    // Calculate holding period return and annualized return
-    const holdingPeriodReturn = (netReturns / principal) * 100;
-    const annualizedReturn = holdingPeriod > 0 ? 
-      (Math.pow(totalProceeds / principal, 1 / holdingPeriod) - 1) * 100 : 0;
+    const theoreticalPrice = couponPV + principalPV;
+    const difference = Math.abs(theoreticalPrice - P);
     
-    return {
-      principal,
-      totalReturns: totalProceeds,
-      netReturns,
-      effectiveYield: annualizedReturn,
-      faceValue,
-      annualCoupon,
-      totalCoupons: totalCouponPayments,
-      capitalGain,
-      bondDetails: {
-        currentPrice: principal,
-        futurePrice,
-        totalCouponPayments,
-        holdingPeriodReturn,
-        annualizedReturn
-      }
-    };
+    if (difference < tolerance) {
+      break;
+    }
+    
+    // Adjust face value
+    FV = FV * (P / theoreticalPrice);
+    iterations++;
   }
+  
+  // Step 2: Compute Annual Coupon Payment
+  const couponPayment = (FV * C) / 100;
+  
+  // Step 3: Compute Net Annual Coupon (after 10% tax)
+  const netCoupon = couponPayment * (1 - withholdingTax);
+  
+  // Step 4: Convert investment period to years
+  const t = M / 12;
+  
+  // Step 5: Compute Total Coupon Income over holding period
+  const totalCouponIncome = netCoupon * t;
+  
+  // Step 6: Compute Bond Price at Purchase (P₀) - this is our investment amount
+  const P0 = P;
+  
+  // Step 7: Compute Bond Price at Exit (Pₜ) after holding for t years
+  const remainingYears = Y - t;
+  const ytmDecimal = YTM / 100;
+  
+  let Pt = 0;
+  if (remainingYears > 0) {
+    // Present value of remaining coupon payments
+    let remainingCouponPV = 0;
+    for (let i = 1; i <= remainingYears; i++) {
+      remainingCouponPV += couponPayment / Math.pow(1 + ytmDecimal, i);
+    }
+    
+    // Present value of principal repayment
+    const remainingPrincipalPV = FV / Math.pow(1 + ytmDecimal, remainingYears);
+    
+    Pt = remainingCouponPV + remainingPrincipalPV;
+  } else {
+    // If holding to maturity
+    Pt = FV;
+  }
+  
+  // Step 8: Compute Exit Value
+  const exitValue = Pt + totalCouponIncome;
+  
+  // Step 9: Compute Projected Return (%)
+  const projectedReturn = ((exitValue - P0) / P0) * 100;
+  
+  // Calculate annualized return
+  const annualizedReturn = t > 0 ? (Math.pow(exitValue / P0, 1 / t) - 1) * 100 : 0;
+  
+  return {
+    principal: P0,
+    totalReturns: exitValue,
+    netReturns: exitValue - P0,
+    effectiveYield: annualizedReturn,
+    faceValue: FV,
+    annualCoupon: couponPayment,
+    netAnnualCoupon: netCoupon,
+    totalCouponIncome,
+    exitPrice: Pt,
+    projectedReturn,
+    bondDetails: {
+      initialPrice: P0,
+      exitPrice: Pt,
+      totalCouponIncome,
+      exitValue,
+      projectedReturn,
+      annualizedReturn,
+      withholdingTax: withholdingTax * 100
+    }
+  };
 }
