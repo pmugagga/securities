@@ -33,10 +33,58 @@ export function calculateYearsToMaturity(maturityDate: string): number {
   return days / 365;
 }
 
+// Calculate face value from current market price and YTM
+function calculateFaceValue(marketPrice: number, couponRate: number, ytm: number, yearsToMaturity: number): number {
+  // Using iterative approach to solve for face value
+  // Price = (Coupon/YTM) * (1 - (1+YTM)^-n) + FaceValue/(1+YTM)^n
+  
+  let faceValue = marketPrice; // Initial guess
+  const tolerance = 0.01;
+  let iterations = 0;
+  const maxIterations = 100;
+  
+  while (iterations < maxIterations) {
+    const annualCoupon = faceValue * couponRate;
+    const couponPV = (annualCoupon / ytm) * (1 - Math.pow(1 + ytm, -yearsToMaturity));
+    const principalPV = faceValue / Math.pow(1 + ytm, yearsToMaturity);
+    const calculatedPrice = couponPV + principalPV;
+    
+    const difference = calculatedPrice - marketPrice;
+    
+    if (Math.abs(difference) < tolerance) {
+      break;
+    }
+    
+    // Adjust face value based on difference
+    faceValue = faceValue * (marketPrice / calculatedPrice);
+    iterations++;
+  }
+  
+  return faceValue;
+}
+
+// Calculate bond price given face value, coupon rate, YTM, and years to maturity
+function calculateBondPrice(faceValue: number, couponRate: number, ytm: number, yearsToMaturity: number): number {
+  const annualCoupon = faceValue * couponRate;
+  const couponPV = (annualCoupon / ytm) * (1 - Math.pow(1 + ytm, -yearsToMaturity));
+  const principalPV = faceValue / Math.pow(1 + ytm, yearsToMaturity);
+  return couponPV + principalPV;
+}
 export interface YieldCalculation {
   totalAtMaturity: number;
   totalReturns: number;
   effectiveYield: number;
+  faceValue?: number;
+  annualCoupon?: number;
+  totalCoupons?: number;
+  capitalGain?: number;
+  bondDetails?: {
+    currentPrice: number;
+    futurePrice: number;
+    totalCouponPayments: number;
+    holdingPeriodReturn: number;
+    annualizedReturn: number;
+  };
   purchasePrice?: number;
   couponPayments?: number;
   capitalGain?: number;
@@ -52,7 +100,8 @@ export function calculateYield(
   interestRate: number,
   tenor: number,
   securityType: 'government_bond' | 'treasury_bill',
-  yieldToMaturity?: number
+  yieldToMaturity?: number,
+  maturityDate?: string
 ) {
   const yearsToMaturity = tenor / 12;
   
@@ -75,15 +124,49 @@ export function calculateYield(
     const ytm = yieldToMaturity || Math.max(interestRate * 1.5, 17); // Minimum 17% or 1.5x coupon rate
     const ytmDecimal = ytm / 100;
     
-    // Calculate total at maturity using YTM compounding
-    const totalAtMaturity = principal * Math.pow(1 + ytmDecimal, yearsToMaturity);
-    const netReturns = totalAtMaturity - principal;
+    // Calculate face value from market price
+    const faceValue = calculateFaceValue(principal, couponRate, ytm, yearsToMaturity);
+    const annualCoupon = faceValue * couponRate;
+    
+    // For holding period calculation (assume 2-year holding period for demonstration)
+    const holdingPeriod = Math.min(2, yearsToMaturity);
+    const remainingYears = yearsToMaturity - holdingPeriod;
+    
+    // Calculate total coupon payments during holding period
+    const totalCouponPayments = annualCoupon * holdingPeriod;
+    
+    // Calculate bond price at end of holding period (if not held to maturity)
+    let futurePrice = faceValue; // If held to maturity
+    if (remainingYears > 0) {
+      futurePrice = calculateBondPrice(faceValue, couponRate, ytm, remainingYears);
+    }
+    
+    // Total proceeds from investment
+    const totalProceeds = totalCouponPayments + futurePrice;
+    const capitalGain = futurePrice - principal;
+    const netReturns = totalProceeds - principal;
+    
+    // Calculate holding period return and annualized return
+    const holdingPeriodReturn = (netReturns / principal) * 100;
+    const annualizedReturn = holdingPeriod > 0 ? 
+      (Math.pow(totalProceeds / principal, 1 / holdingPeriod) - 1) * 100 : 0;
     
     return {
       principal,
-      totalReturns: totalAtMaturity,
+      totalReturns: totalProceeds,
       netReturns,
-      effectiveYield: ytm,
+      effectiveYield: annualizedReturn,
+      faceValue,
+      annualCoupon,
+      totalCoupons: totalCouponPayments,
+      capitalGain,
+      bondDetails: {
+        currentPrice: principal,
+        futurePrice,
+        totalCouponPayments,
+        holdingPeriodReturn,
+        annualizedReturn
+      }
     };
   }
 }

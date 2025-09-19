@@ -18,7 +18,7 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
     : [12, 24, 36, 60, 120, 180];
 
   useEffect(() => {
-    const result = calculateYield(amount, security.interestRate, tenor, security.type, security.yield);
+    const result = calculateYield(amount, security.interestRate, tenor, security.type, security.yield, security.maturityDate);
     setCalculation(result);
   }, [amount, tenor, security]);
 
@@ -70,13 +70,36 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
           </div>
         </div>
 
+        {security.type === 'government_bond' && calculation.bondDetails && (
+          <div className="bg-blue-50 rounded-lg p-4 mb-4">
+            <h5 className="font-semibold text-blue-900 mb-2">Bond Analysis</h5>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-blue-700">Face Value:</span>
+                <div className="font-semibold">{formatCurrency(calculation.faceValue || 0)}</div>
+              </div>
+              <div>
+                <span className="text-blue-700">Annual Coupon:</span>
+                <div className="font-semibold">{formatCurrency(calculation.annualCoupon || 0)}</div>
+              </div>
+              <div>
+                <span className="text-blue-700">Coupon Rate:</span>
+                <div className="font-semibold">{formatPercentage(security.interestRate)}</div>
+              </div>
+              <div>
+                <span className="text-blue-700">YTM:</span>
+                <div className="font-semibold">{formatPercentage(security.yield)}</div>
+              </div>
+            </div>
+          </div>
+        )}
         <>
           <div className="bg-white rounded-lg p-4 border">
           <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
             <TrendingUp className="w-4 h-4 mr-2 text-green-600" />
-            Projected Returns
+            {security.type === 'government_bond' ? 'Projected Returns (2-Year Hold)' : 'Projected Returns'}
           </h5>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <div className="text-sm text-blue-700 font-medium mb-1">
                   Current Market Value
@@ -87,7 +110,7 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
               </div>
               <div className="text-center p-3 bg-green-50 rounded-lg">
                 <div className="text-sm text-green-700 font-medium mb-1">
-                  Total Value at Maturity
+                Total Proceeds
                 </div>
                 <div className="font-bold text-lg text-green-600 break-words">
                   {formatCurrency(calculation.totalReturns)}
@@ -103,13 +126,48 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
               </div>
               <div className="text-center p-3 bg-purple-50 rounded-lg">
                 <div className="text-sm text-purple-700 font-medium mb-1">
-                  Effective Yield
-                </div>
+                Annualized Return
+                Investment Amount
                 <div className="font-bold text-lg text-blue-600">
                   {formatPercentage(calculation.effectiveYield)}
                 </div>
               </div>
             </div>
+          
+          {security.type === 'government_bond' && calculation.bondDetails && (
+            <div className="mt-4 pt-4 border-t">
+              <h6 className="font-medium text-gray-800 mb-2">Breakdown (2-Year Holding Period)</h6>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="bg-yellow-50 p-3 rounded">
+                  <div className="text-yellow-700 font-medium">Coupon Payments</div>
+                  <div className="text-lg font-bold text-yellow-800">
+                    {formatCurrency(calculation.totalCoupons || 0)}
+                  </div>
+                  <div className="text-xs text-yellow-600">
+                    {formatCurrency(calculation.annualCoupon || 0)} × 2 years
+                  </div>
+                </div>
+                <div className="bg-indigo-50 p-3 rounded">
+                  <div className="text-indigo-700 font-medium">Capital Gain</div>
+                  <div className="text-lg font-bold text-indigo-800">
+                    {formatCurrency(calculation.capitalGain || 0)}
+                  </div>
+                  <div className="text-xs text-indigo-600">
+                    Sale price - Purchase price
+                  </div>
+                </div>
+                <div className="bg-green-50 p-3 rounded">
+                  <div className="text-green-700 font-medium">Total Return</div>
+                  <div className="text-lg font-bold text-green-800">
+                    {formatPercentage(calculation.bondDetails.holdingPeriodReturn)}
+                  </div>
+                  <div className="text-xs text-green-600">
+                    Over 2 years
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           </div>
 
           <div className="flex justify-end">
