@@ -10,6 +10,9 @@ export interface YieldCalculation {
   exitPrice?: number;
   projectedReturn?: number;
   annualizedReturn?: number;
+  holdingPeriodReturn?: number;
+  timeToMaturityYears?: number;
+  remainingMaturityYears?: number;
 }
 
 export function formatCurrency(amount: number): string {
@@ -43,56 +46,56 @@ export function calculateYearsToMaturity(maturityDate: Date): number {
   return calculateDaysToMaturity(maturityDate) / 365.25;
 }
 
-// Function to calculate face value from investment amount using YTM
-function calculateFaceValue(investmentAmount: number, couponRate: number, ytm: number, yearsToMaturity: number): number {
-  // Use iterative method to find face value
-  let faceValue = investmentAmount;
-  let iterations = 0;
-  const maxIterations = 100;
-  const tolerance = 1;
-
-  while (iterations < maxIterations) {
-    const couponPayment = faceValue * (couponRate / 100);
-    
-    // Calculate present value of coupon payments
-    let pvCoupons = 0;
-    for (let i = 1; i <= yearsToMaturity; i++) {
-      pvCoupons += couponPayment / Math.pow(1 + ytm / 100, i);
-    }
-    
-    // Calculate present value of face value
-    const pvFaceValue = faceValue / Math.pow(1 + ytm / 100, yearsToMaturity);
-    
-    // Total present value (theoretical bond price)
-    const theoreticalPrice = pvCoupons + pvFaceValue;
-    
-    // Check if we're close enough
-    if (Math.abs(theoreticalPrice - investmentAmount) < tolerance) {
-      break;
-    }
-    
-    // Adjust face value
-    faceValue = faceValue * (investmentAmount / theoreticalPrice);
-    iterations++;
-  }
-  
-  return faceValue;
+// Helper function to calculate time difference in years
+function calculateYearsDifference(startDate: Date, endDate: Date): number {
+  const diffTime = endDate.getTime() - startDate.getTime();
+  return diffTime / (1000 * 60 * 60 * 24 * 365.25);
 }
 
-// Function to calculate bond price given face value, coupon rate, YTM, and years to maturity
-function calculateBondPrice(faceValue: number, couponRate: number, ytm: number, yearsToMaturity: number): number {
-  const couponPayment = faceValue * (couponRate / 100);
+// Helper function to calculate after-tax coupons received during holding period
+function calculateCouponsReceived(
+  investmentAmount: number,
+  couponRate: number,
+  holdingPeriodYears: number,
+  withholdingTaxRate: number = 0.10
+): number {
+  const grossAnnualCoupon = investmentAmount * (couponRate / 100);
+  const netAnnualCoupon = grossAnnualCoupon * (1 - withholdingTaxRate);
+  return netAnnualCoupon * holdingPeriodYears;
+}
+
+// Helper function to calculate exit price using present value of remaining cash flows
+function calculateExitPrice(
+  investmentAmount: number,
+  couponRate: number,
+  ytm: number,
+  remainingYearsToMaturity: number
+): number {
+  if (remainingYearsToMaturity <= 0) {
+    return investmentAmount; // At maturity, bond is worth face value
+  }
+
+  const grossAnnualCoupon = investmentAmount * (couponRate / 100);
+  const ytmDecimal = ytm / 100;
   
-  // Calculate present value of coupon payments
+  // Present value of remaining coupon payments (gross, since buyer will receive them)
   let pvCoupons = 0;
-  for (let i = 1; i <= yearsToMaturity; i++) {
-    pvCoupons += couponPayment / Math.pow(1 + ytm / 100, i);
+  const remainingCouponPayments = Math.floor(remainingYearsToMaturity);
+  
+  for (let i = 1; i <= remainingCouponPayments; i++) {
+    pvCoupons += grossAnnualCoupon / Math.pow(1 + ytmDecimal, i);
   }
   
-  // Calculate present value of face value
-  const pvFaceValue = faceValue / Math.pow(1 + ytm / 100, yearsToMaturity);
+  // Present value of redemption amount
+  const pvRedemption = investmentAmount / Math.pow(1 + ytmDecimal, remainingYearsToMaturity);
   
-  return pvCoupons + pvFaceValue;
+  return pvCoupons + pvRedemption;
+}
+
+// Helper function to calculate annualized return
+function calculateAnnualizedReturn(hpr: number, holdingPeriodYears: number): number {
+  if (holdingPeriodYears <= 0) return 0;
+  return (Math.pow(1 + hpr, 1 / holdingPeriodYears) - 1) * 100;
 }
 
 export function calculateYield(
@@ -122,59 +125,56 @@ export function calculateYield(
       faceValue
     };
   } else {
-    // Government Bond calculation using the provided formula
-    const couponRate = interestRate;
-    const yieldToMaturity = ytm || 17.2; // Default YTM if not provided
+    // Government Bond calculation using the specified formula
+    const currentDate = new Date(); // Booking Date = Current Business Date
+    const bondMaturityDate = maturityDate || new Date(Date.now() + (20 * 365.25 * 24 * 60 * 60 * 1000)); // Default 20 years if not provided
     
-    // Calculate years to maturity (assume 20 years if maturity date not provided)
-    let yearsToMaturity = 20;
-    if (maturityDate) {
-      yearsToMaturity = calculateYearsToMaturity(maturityDate);
-    }
+    // Step 1: Compute time to maturity from current business date
+    const timeToMaturityYears = calculateYearsDifference(currentDate, bondMaturityDate);
     
-    // Step 1: Calculate Face Value from investment amount
-    const faceValue = calculateFaceValue(amount, couponRate, yieldToMaturity, yearsToMaturity);
-    
-    // Step 2: Compute Annual Coupon Payment
-    const annualCoupon = faceValue * (couponRate / 100);
-    
-    // Step 3: Compute Net Annual Coupon (after 10% tax)
-    const netAnnualCoupon = annualCoupon * 0.90;
-    
-    // Step 4: Convert investment period to years
+    // Step 2: Compute holding period in years
     const holdingPeriodYears = tenorMonths / 12;
     
-    // Step 5: Compute Total Coupon Income over holding period
-    const totalCouponIncome = netAnnualCoupon * holdingPeriodYears;
+    // Step 3: Calculate after-tax coupons received during holding period
+    const couponRate = interestRate;
+    const totalCouponsReceived = calculateCouponsReceived(amount, couponRate, holdingPeriodYears);
     
-    // Step 6: Compute Bond Price at Purchase (P₀) - this should equal our investment amount
-    const initialPrice = amount;
+    // Step 4: Calculate remaining maturity at exit
+    const remainingMaturityYears = Math.max(0, timeToMaturityYears - holdingPeriodYears);
     
-    // Step 7: Compute Bond Price at Exit (Pₜ) after holding for t years
-    const remainingYears = yearsToMaturity - holdingPeriodYears;
-    const exitPrice = calculateBondPrice(faceValue, couponRate, yieldToMaturity, remainingYears);
+    // Step 5: Calculate exit price
+    const yieldToMaturity = ytm || 17.2; // Default YTM if not provided
+    const exitPrice = calculateExitPrice(amount, couponRate, yieldToMaturity, remainingMaturityYears);
     
-    // Step 8: Compute Exit Value
-    const exitValue = exitPrice + totalCouponIncome;
+    // Step 6: Calculate total proceeds and returns
+    const totalProceeds = totalCouponsReceived + exitPrice;
+    const netGain = totalProceeds - amount;
     
-    // Step 9: Compute Projected Return (%)
-    const projectedReturn = ((exitValue - initialPrice) / initialPrice) * 100;
+    // Step 7: Calculate Holding Period Return (HPR)
+    const hpr = netGain / amount;
     
-    // Step 10: Compute Annualized Return
-    const annualizedReturn = (Math.pow(exitValue / initialPrice, 1 / holdingPeriodYears) - 1) * 100;
+    // Step 8: Calculate Annualized Return
+    const annualizedReturn = calculateAnnualizedReturn(hpr, holdingPeriodYears);
+    
+    // Calculate gross annual coupon for display
+    const grossAnnualCoupon = amount * (couponRate / 100);
+    const netAnnualCoupon = grossAnnualCoupon * 0.90; // After 10% tax
     
     return {
-      principal: initialPrice,
-      totalReturns: exitValue,
-      netReturns: exitValue - initialPrice,
+      principal: amount,
+      totalReturns: totalProceeds,
+      netReturns: netGain,
       effectiveYield: annualizedReturn,
-      faceValue,
-      annualCoupon,
-      netAnnualCoupon,
-      totalCouponIncome,
-      exitPrice,
-      projectedReturn,
-      annualizedReturn
+      faceValue: amount, // Investment amount serves as face value in this model
+      annualCoupon: grossAnnualCoupon,
+      netAnnualCoupon: netAnnualCoupon,
+      totalCouponIncome: totalCouponsReceived,
+      exitPrice: exitPrice,
+      projectedReturn: hpr * 100, // HPR as percentage
+      annualizedReturn: annualizedReturn,
+      holdingPeriodReturn: hpr * 100,
+      timeToMaturityYears: timeToMaturityYears,
+      remainingMaturityYears: remainingMaturityYears
     };
   }
 }
