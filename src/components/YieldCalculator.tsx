@@ -18,7 +18,7 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
     : [12, 24, 36, 60, 120, 180];
 
   useEffect(() => {
-    const result = calculateYield(amount, security.interestRate, tenor, security.type, security.yield, security.maturityDate);
+    const result = calculateYield(amount, security.interestRate, tenor, security.type, security.yield, new Date(security.maturityDate));
     setCalculation(result);
   }, [amount, tenor, security]);
 
