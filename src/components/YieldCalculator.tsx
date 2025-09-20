@@ -209,6 +209,7 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({ security, onEx
           >
             Express Interest for This Calculation
           </button>
+        </div>
       </div>
     </div>
   );
