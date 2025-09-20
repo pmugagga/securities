@@ -92,7 +92,7 @@ export const SecurityCard: React.FC<SecurityCardProps> = ({ security, onExpressI
               <Calendar className="w-4 h-4 text-gray-400" />
               <div>
                 <div className="text-sm text-gray-500">Maturity</div>
-                <div className="font-medium text-gray-900">{formatDate(security.maturityDate)}</div>
+                <div className="font-medium text-gray-900">{formatDate(new Date(security.maturityDate))}</div>
               </div>
             </div>
           </div>

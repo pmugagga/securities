@@ -89,7 +89,7 @@ export const LeadsPanel: React.FC<LeadsPanelProps> = ({ leads, securities, onUpd
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Calendar className="w-4 h-4 mr-2" />
-                  {formatDate(lead.createdAt)}
+                  {formatDate(new Date(lead.createdAt))}
                 </div>
               </div>
 
