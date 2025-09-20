@@ -26,7 +26,7 @@ export function formatPercentage(rate: number): string {
 }
 
 export function formatDate(date: Date): string {
-  return new Intl.DateFormat('en-UG', {
+  return new Intl.DateTimeFormat('en-UG', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
